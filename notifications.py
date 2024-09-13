@@ -20,6 +20,7 @@ class DataInteraction:
             except json.JSONDecodeError:
                 my_dict = {}
         return my_dict
+    
     def __writeData__(self):
         # Safely write the dictionary to the file
         try:
@@ -29,42 +30,47 @@ class DataInteraction:
             print(f"Error writing to file: {e}")
             return False
         return True
+    
 class Notification(DataInteraction):
-    def __init__(self, app_token, user_key, device_name, title, message):
+    def __init__(self, app_token, user_key):
         super().__init__()
         self.app_token = app_token
         self.user_key = user_key
-        self.time_sent = ""
-        self.device_name = device_name
-        self.title = title
-        self.message = message
-    def send_textNotification(self):
-        url = "https://api.pushover.net/1/messages.json"
-        token = self.app_token
-        key = self.user_key
-        sent_time = self.time_sent
-        device = self.device_name
-        title = self.title
-        message = self.message
+
+    def get_currentTime(self):
         current_time = datetime.now()
-        sent_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
+
+        # change to ('%Y-%m-%d %I:%M:%S %p') for 12hr time format 
+        formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        return formatted_time
+ 
+    def send_textNotification(self, device=None, title="", message=""):
+        url = "https://api.pushover.net/1/messages.json"
+        current_time = self.get_currentTime()
 
         data = {
-            "token" : token,
-            "user" : key,
+            "token" : self.app_token,
+            "user" : self.user_key,
             "message" : message,
             "title" : title,
             "device" : device
         }
 
+        if device:
+            data["device"] = device
+
         try:
             response = requests.post(url, data=data)
             if response.status_code == 200:
-                if device not in self.my_dict:
-                    self.my_dict[device] = []
+
+                log_key = device if device else 'all-devices'
+
+                if log_key not in self.my_dict:
+                    self.my_dict[log_key] = []
                 
                 self.my_dict[device].append({
-                    "time sent" : sent_time,
+                    "time sent" : current_time,
                     "title" : title,
                     "message" : message
                 })
@@ -72,20 +78,13 @@ class Notification(DataInteraction):
                 return 1
         except Exception as e:
             return f"{e}"
-    def send_imageNotification(self, images):
+    def send_imageNotification(self, device=None, title="", message="", images=None):
         url = "https://api.pushover.net/1/messages.json"
-        token = self.app_token
-        key = self.user_key
-        sent_time = self.time_sent
-        device = self.device_name
-        title = self.title
-        message = self.message
-        current_time = datetime.now()
-        sent_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
+        current_time = self.get_currentTime()
 
         data = {
-            "token" : token,
-            "user" : key,
+            "token" : self.app_token,
+            "user" : self.user_key,
             "message" : message,
             "title" : title,
             "device" : device
@@ -94,15 +93,19 @@ class Notification(DataInteraction):
             "attachment": (images, open(images, 'rb'), "image/jpeg")
         }
 
-
+        if device:
+            data["device"] = device
         try:
             response = requests.post(url, data=data, files=files)
             if response.status_code == 200:
-                if device not in self.my_dict:
-                    self.my_dict[device] = []
+
+                log_key = device if device else 'all-devices'
+
+                if log_key not in self.my_dict:
+                    self.my_dict[log_key] = []
                 
                 self.my_dict[device].append({
-                    "time sent" : sent_time,
+                    "time sent" : current_time,
                     "title" : title,
                     "message" : message,
                     "image" : images
@@ -112,6 +115,8 @@ class Notification(DataInteraction):
         except Exception as e:
             return f"{e}"
     def notification_logs(self, device_name=None):
+        # returns logs for speicfied devices or logs for notifications sent to device: all-devices
         if device_name:
             return self.my_dict.get(device_name, f"No logs found for device: {device_name}")
+        #returns all logs 
         return self.my_dict

@@ -4,10 +4,16 @@ Usage:
     device = "some-device"
     title = "test"
     message = "testing classes AGAIN"
-    noti = Notification(credentials.pushOver_appToken, credentials.pushOver_userKey, device, title, message)
-    result = noti.send_textNotification()
+
+    
+
+    noti = Notification(credentials.pushOver_appToken, credentials.pushOver_userKey)
+    result = noti.send_textNotification(device, title, message)
 
     print(f"Text notification result: {result}")
 
-    logs = noti.notification_logs("pauls-iphone")
+    # if you have 'test_image.jpeg' in cwd
+    result = noti.send_textNotification(device, title, message, 'test_image.jpeg)
+
+    logs = noti.notification_logs("some-device")
     print(f"\n\nNotification Logs: {logs}")
