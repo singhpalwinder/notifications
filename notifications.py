@@ -12,8 +12,6 @@ class DataInteraction:
         if not os.path.exists(self.file):
                 with open(self.file, 'w') as f:
                     json.dump({}, f)
-
-
         with open(self.file, 'r') as f:
             try:
                 my_dict = json.load(f)
@@ -32,19 +30,27 @@ class DataInteraction:
         return True
     
 class Notification(DataInteraction):
-    def __init__(self, app_token, user_key):
+    def __init__(self, app_token=None, user_key=None):
         super().__init__()
         self.app_token = app_token
         self.user_key = user_key
+        self.get_credentials()
 
+    def get_credentials(self):
+        if not self.app_token:
+            self.app_token = os.environ.get('PUSHOVER_APP_TOKEN')
+        if not self.user_key:
+            self.user_key = os.environ.get('PUSHOVER_USER_KEY')
+
+        if not self.app_token or not self.user_key:
+            raise ValueError("App token and user key must both be set. Provide them or set them as environment variables.")
+
+        return self.app_token, self.user_key
     def get_currentTime(self):
         current_time = datetime.now()
 
-        # change to ('%Y-%m-%d %I:%M:%S %p') for 12hr time format 
-        formatted_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        return formatted_time
- 
+        # change to ('%Y-%m-%d %I:%M:%S %p') for 12hr time format         
+        return current_time.strftime('%Y-%m-%d %H:%M:%S')
     def send_textNotification(self, device=None, title="", message=""):
         url = "https://api.pushover.net/1/messages.json"
         current_time = self.get_currentTime()
@@ -69,7 +75,7 @@ class Notification(DataInteraction):
                 if log_key not in self.my_dict:
                     self.my_dict[log_key] = []
                 
-                self.my_dict[device].append({
+                self.my_dict[log_key].append({
                     "time sent" : current_time,
                     "title" : title,
                     "message" : message
@@ -104,7 +110,7 @@ class Notification(DataInteraction):
                 if log_key not in self.my_dict:
                     self.my_dict[log_key] = []
                 
-                self.my_dict[device].append({
+                self.my_dict[log_key].append({
                     "time sent" : current_time,
                     "title" : title,
                     "message" : message,
